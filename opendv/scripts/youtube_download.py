@@ -29,16 +29,16 @@ def single_download(vid_info):
             return
     if not os.path.exists(path):
         os.makedirs(path, exist_ok=True)
-    
+
     try:
-        ret = os.system(f"{CONFIGS.method} -f '{CONFIGS.format}' -o '{path}/{filename}.%(ext)s' {url}")
+        ret = os.system(f"{CONFIGS.method} -f '{CONFIGS.format}' -o '{path}/{filename}.%(ext)s' --no-continue --socket-timeout 1200 {url}")
         if ret != 0:
             raise Exception("ERROR: Video unavailable or network error.")
     except Exception as e:
         with open(CONFIGS.exception_file, "a") as f:
             f.write("Error downloading video [{}]: {}\n".format(filename, e))
         return
-    
+
 
 def multiple_download(video_list, configs):
     global CONFIGS
@@ -48,6 +48,7 @@ def multiple_download(video_list, configs):
     assert CONFIGS["method"] in ["youtube-dl", "yt-dlp"], "Only support `youtube-dl` and `yt-dlp`."
     CONFIGS["format"] = configs["format"] if configs["method"] == "youtube-dl" else configs["format_for_ytdlp"]
     CONFIGS["root"] = configs.root
+    CONFIGS["exception_file"] = configs["exception_file"]
     CONFIGS = EasyDict(CONFIGS)
     finished = 0
     with Pool(configs.num_workers) as p:
@@ -89,7 +90,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument("--config", type=str, default="configs/download.json", help="Path to the config file. should be a `json` file.")
     args = parser.parse_args()
-    
+
     configs = EasyDict(json.load(open(args.config, "r")))
     with open(configs.exception_file, "w") as f:
         f.write("")
